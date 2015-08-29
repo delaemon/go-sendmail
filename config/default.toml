@@ -1,0 +1,12 @@
+from = "sender@example.org"
+to = "recipient@example.net"
+subject = "This is Subject"
+body = "This is message body"
+mode = "sendmail"
+
+[smtp]
+user = "account@gmail.com"
+pwd = "gmail password"
+host = "smtp.gmail.com"
+port = "587"
+
