@@ -27,45 +27,45 @@ type Config struct {
 
 var (
 	config 	  Config
-	smtp_user *string
-	smtp_pwd  *string
-	smtp_host *string
-	smtp_port *string
-	from      *string
-	to		  *string
-	subject   *string
-	body 	  *string
-	mode	  *string
-	help 	  *bool
+	smtp_user string
+	smtp_pwd  string
+	smtp_host string
+	smtp_port string
+	from      string
+	to		  string
+	subject   string
+	body 	  string
+	mode	  string
+	help 	  bool
 )
 
 func stream() {
-	c, err := smtp.Dial(*smtp_host + ":" + *smtp_port)
+	c, err := smtp.Dial(smtp_host + ":" + smtp_port)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer c.Close()
-	c.Mail(*from)
-	c.Rcpt(*to)
+	c.Mail(from)
+	c.Rcpt(to)
 	wc, err := c.Data()
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer wc.Close()
-	buf := bytes.NewBufferString(*body)
+	buf := bytes.NewBufferString(body)
 	if _, err = buf.WriteTo(wc); err != nil {
 		log.Fatal(err)
 	}
 }
 
 func sendmail() {
-	auth := smtp.PlainAuth("", *smtp_user, *smtp_pwd, *smtp_host)
+	auth := smtp.PlainAuth("", smtp_user, smtp_pwd, smtp_host)
 	msg := []byte(
-	"To: " + *to + "\r\n" +
-	"Subject: " + *subject + "\r\n" +
+	"To: " + to + "\r\n" +
+	"Subject: " + subject + "\r\n" +
 	"\r\n" +
-	*body + "\r\n")
-	err := smtp.SendMail(*smtp_host + ":" + *smtp_port, auth, *from, []string{*to}, msg)
+	body + "\r\n")
+	err := smtp.SendMail(smtp_host + ":" + smtp_port, auth, from, []string{to}, msg)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -77,16 +77,16 @@ usage:
 	go run src/sendmail.go [option] (default-setting: config/default.toml)
 
 option:
-	-u 		smtp login user
-	-p 		smtp login password
-	-h 		smtp server host
-	-P 		stmp server port
-	-f 		email sender
-	-t 		email recipient
-	-s 		email subject
-	-b 		email body
-	-m 		send mode(sendmail|stream|config)
-	-help 	view usage
+	-u, --user 			smtp login user
+	-p, --password 		smtp login password
+	-h, --host			smtp server host
+	-P, --Port 			stmp server port
+	-f, --from			email sender
+	-t, --to 			email recipient
+	-s, --subject 		email subject
+	-b, --body 			email body
+	-m, --mode 			send mode(sendmail|stream|config)
+	--help			 	view usage
 
 example:
 	go run src/sendmail.go \
@@ -106,28 +106,37 @@ example:
 func showConfig() {
 	fmt.Println(
 		"[smtp]\n"  +
-		"user: " 	+ *smtp_user + "\n" +
-		"pwd: "  	+ *smtp_pwd  + "\n" +
-		"host: " 	+ *smtp_host + "\n" +
-		"port: " 	+ *smtp_port + "\n" +
+		"user: " 	+ smtp_user + "\n" +
+		"pwd: "  	+ smtp_pwd  + "\n" +
+		"host: " 	+ smtp_host + "\n" +
+		"port: " 	+ smtp_port + "\n" +
 		"[mail]\n" 	+
-		"from: " 	+ *from	    + "\n" +
-		"to: " 		+ *to 	    + "\n" +
-		"subject: " + *subject	+ "\n" +
-		"body: " 	+ *body 	+ "\n")
+		"from: " 	+ from	    + "\n" +
+		"to: " 		+ to 	    + "\n" +
+		"subject: " + subject	+ "\n" +
+		"body: " 	+ body 	+ "\n")
 }
 
 func setFlag() {
-	smtp_user = flag.String("u", config.Smtp.User, "smtp login user")
-	smtp_pwd  = flag.String("p", config.Smtp.Pwd,  "smtp login password")
-	smtp_host = flag.String("h", config.Smtp.Host, "smtp server host")
-	smtp_port = flag.String("P", config.Smtp.Port, "stmp server port")
-	from      = flag.String("f", config.From,      "email sender")
-	to        = flag.String("t", config.To,        "email recipient")
-	subject   = flag.String("s", config.Subject,   "email subject")
-	body      = flag.String("b", config.Body,      "email body")
-	mode      = flag.String("m", config.Mode,      "send mode(sendmail|stream|config)")
-	help      = flag.Bool("help", false, "View usage")
+	flag.StringVar(&smtp_user,	"u", 		config.Smtp.User, "smtp login user")
+	flag.StringVar(&smtp_user,	"user", 	config.Smtp.User, "smtp login user")
+	flag.StringVar(&smtp_pwd ,	"p", 		config.Smtp.Pwd,  "smtp login password")
+	flag.StringVar(&smtp_pwd ,	"password", config.Smtp.Pwd,  "smtp login password")
+	flag.StringVar(&smtp_host,	"h", 		config.Smtp.Host, "smtp server host")
+	flag.StringVar(&smtp_host,	"host", 	config.Smtp.Host, "smtp server host")
+	flag.StringVar(&smtp_port,	"P", 		config.Smtp.Port, "stmp server port")
+	flag.StringVar(&smtp_port,	"Port", 	config.Smtp.Port, "stmp server port")
+	flag.StringVar(&from     ,	"f", 		config.From,      "email sender")
+	flag.StringVar(&from     ,	"from", 	config.From,      "email sender")
+	flag.StringVar(&to       ,	"t", 		config.To,        "email recipient")
+	flag.StringVar(&to       ,	"to", 		config.To,        "email recipient")
+	flag.StringVar(&subject  ,	"s", 		config.Subject,   "email subject")
+	flag.StringVar(&subject  ,	"subject", 	config.Subject,   "email subject")
+	flag.StringVar(&body     ,	"b", 		config.Body,      "email body")
+	flag.StringVar(&body     ,	"body", 	config.Body,      "email body")
+	flag.StringVar(&mode     ,	"m", 		config.Mode,      "send mode(sendmail|stream|config)")
+	flag.StringVar(&mode     ,	"mode", 	config.Mode,      "send mode(sendmail|stream|config)")
+	flag.BoolVar  (&help     ,	"help",		false, 		   	  "View usage")
 }
 
 func main() {
@@ -138,12 +147,12 @@ func main() {
 	setFlag()
 	flag.Parse()
 
-	if *help {
+	if help {
 		usage()
 		return
 	}
 
-	switch (*mode){
+	switch (mode){
 	case "strem":
 		stream()
 	case "sendmail":
