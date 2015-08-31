@@ -26,7 +26,7 @@ type Config struct {
 }
 
 var (
-	config Config
+	config 	  Config
 	smtp_user *string
 	smtp_pwd  *string
 	smtp_host *string
@@ -36,6 +36,7 @@ var (
 	subject   *string
 	body 	  *string
 	mode	  *string
+	help 	  *bool
 )
 
 func stream() {
@@ -76,15 +77,16 @@ usage:
 	go run src/sendmail.go [option] (default-setting: config/default.toml)
 
 option:
-	-u 	smtp login user
-	-p 	smtp login password
-	-h 	smtp server host
-	-P 	stmp server port
-	-f 	email sender
-	-t 	email recipient
-	-s 	email subject
-	-b 	email body
-	-m 	send mode(sendmail|stream|config)
+	-u 		smtp login user
+	-p 		smtp login password
+	-h 		smtp server host
+	-P 		stmp server port
+	-f 		email sender
+	-t 		email recipient
+	-s 		email subject
+	-b 		email body
+	-m 		send mode(sendmail|stream|config)
+	-help 	view usage
 
 example:
 	go run src/sendmail.go \
@@ -125,6 +127,7 @@ func setFlag() {
 	subject   = flag.String("s", config.Subject,   "email subject")
 	body      = flag.String("b", config.Body,      "email body")
 	mode      = flag.String("m", config.Mode,      "send mode(sendmail|stream|config)")
+	help      = flag.Bool("help", false, "View usage")
 }
 
 func main() {
@@ -134,6 +137,11 @@ func main() {
 	}
 	setFlag()
 	flag.Parse()
+
+	if *help {
+		usage()
+		return
+	}
 
 	switch (*mode){
 	case "strem":
