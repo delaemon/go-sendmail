@@ -7,6 +7,7 @@ import (
 	"flag"
 	"github.com/BurntSushi/toml"
 	"fmt"
+	"os"
 )
 
 type Smtp struct {
@@ -118,25 +119,30 @@ func showConfig() {
 }
 
 func setFlag() {
-	flag.StringVar(&smtp_user,	"u", 		config.Smtp.User, "smtp login user")
-	flag.StringVar(&smtp_user,	"user", 	config.Smtp.User, "smtp login user")
-	flag.StringVar(&smtp_pwd ,	"p", 		config.Smtp.Pwd,  "smtp login password")
-	flag.StringVar(&smtp_pwd ,	"password", config.Smtp.Pwd,  "smtp login password")
-	flag.StringVar(&smtp_host,	"h", 		config.Smtp.Host, "smtp server host")
-	flag.StringVar(&smtp_host,	"host", 	config.Smtp.Host, "smtp server host")
-	flag.StringVar(&smtp_port,	"P", 		config.Smtp.Port, "stmp server port")
-	flag.StringVar(&smtp_port,	"Port", 	config.Smtp.Port, "stmp server port")
-	flag.StringVar(&from     ,	"f", 		config.From,      "email sender")
-	flag.StringVar(&from     ,	"from", 	config.From,      "email sender")
-	flag.StringVar(&to       ,	"t", 		config.To,        "email recipient")
-	flag.StringVar(&to       ,	"to", 		config.To,        "email recipient")
-	flag.StringVar(&subject  ,	"s", 		config.Subject,   "email subject")
-	flag.StringVar(&subject  ,	"subject", 	config.Subject,   "email subject")
-	flag.StringVar(&body     ,	"b", 		config.Body,      "email body")
-	flag.StringVar(&body     ,	"body", 	config.Body,      "email body")
-	flag.StringVar(&mode     ,	"m", 		config.Mode,      "send mode(sendmail|stream|config)")
-	flag.StringVar(&mode     ,	"mode", 	config.Mode,      "send mode(sendmail|stream|config)")
-	flag.BoolVar  (&help     ,	"help",		false, 		   	  "View usage")
+	f := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+	f.StringVar(&smtp_user,	"u", 		config.Smtp.User, "smtp login user")
+	f.StringVar(&smtp_user,	"user", 	config.Smtp.User, "smtp login user")
+	f.StringVar(&smtp_pwd ,	"p", 		config.Smtp.Pwd,  "smtp login password")
+	f.StringVar(&smtp_pwd ,	"password", config.Smtp.Pwd,  "smtp login password")
+	f.StringVar(&smtp_host,	"h", 		config.Smtp.Host, "smtp server host")
+	f.StringVar(&smtp_host,	"host", 	config.Smtp.Host, "smtp server host")
+	f.StringVar(&smtp_port,	"P", 		config.Smtp.Port, "stmp server port")
+	f.StringVar(&smtp_port,	"Port", 	config.Smtp.Port, "stmp server port")
+	f.StringVar(&from     ,	"f", 		config.From,      "email sender")
+	f.StringVar(&from     ,	"from", 	config.From,      "email sender")
+	f.StringVar(&to       ,	"t", 		config.To,        "email recipient")
+	f.StringVar(&to       ,	"to", 		config.To,        "email recipient")
+	f.StringVar(&subject  ,	"s", 		config.Subject,   "email subject")
+	f.StringVar(&subject  ,	"subject", 	config.Subject,   "email subject")
+	f.StringVar(&body     ,	"b", 		config.Body,      "email body")
+	f.StringVar(&body     ,	"body", 	config.Body,      "email body")
+	f.StringVar(&mode     ,	"m", 		config.Mode,      "send mode(sendmail|stream|config)")
+	f.StringVar(&mode     ,	"mode", 	config.Mode,      "send mode(sendmail|stream|config)")
+	f.BoolVar  (&help     ,	"help",		false, 		   	  "View usage")
+	f.Parse(os.Args[1:])
+	for 0 < f.NArg() {
+		f.Parse(f.Args()[1:])
+	}
 }
 
 func main() {
@@ -145,7 +151,6 @@ func main() {
 		return
 	}
 	setFlag()
-	flag.Parse()
 
 	if help {
 		usage()
