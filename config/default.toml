@@ -2,7 +2,9 @@ from = "sender@example.org"
 to = "recipient@example.net"
 mode = "sendmail"
 subject = "Let It Be"
-body = '''When I find myself in times of trouble
+attachFile = "/path/to/image.png"
+contentType = "text/html"
+body = '''<h1>When I find myself in times of trouble
 Mother Mary comes to me
 Speaking words of wisdom, let it be
 And in my hour of darkness
@@ -10,7 +12,7 @@ She is standing right in front of me
 Speaking words of wisdom, let it be
 Let it be, let it be
 Let it be, let it be
-Whisper words of wisdom, let it be
+Whisper words of wisdom, let it be</h1>
 '''
 
 [smtp]

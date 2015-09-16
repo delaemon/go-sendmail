@@ -8,6 +8,10 @@ import (
 	"github.com/BurntSushi/toml"
 	"fmt"
 	"os"
+	"io/ioutil"
+	"encoding/base64"
+	"path"
+	"net/http"
 )
 
 type Smtp struct {
@@ -18,55 +22,85 @@ type Smtp struct {
 }
 
 type Config struct {
-	Smtp    Smtp
-	From    string
-	To      string
-	Subject string
-	Body    string
-	Mode    string
+	Smtp    	Smtp
+	From    	string
+	To      	string
+	Subject 	string
+	Body    	string
+	AttachFile 	string
+	ContentType	string
 }
 
 var (
-	config 	  Config
-	smtp_user string
-	smtp_pwd  string
-	smtp_host string
-	smtp_port string
-	from      string
-	to		  string
-	subject   string
-	body 	  string
-	mode	  string
-	help 	  bool
+	config 	  		Config
+	smtpUser 		string
+	smtpPwd  		string
+	smtpHost 		string
+	smtpPort 		string
+	from      		string
+	to		  		string
+	subject   		string
+	body 	  		string
+	attachFile 		string
+	contentType 	string
+	show	   		bool
+	help 	  		bool
 )
 
-func stream() {
-	c, err := smtp.Dial(smtp_host + ":" + smtp_port)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer c.Close()
-	c.Mail(from)
-	c.Rcpt(to)
-	wc, err := c.Data()
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer wc.Close()
-	buf := bytes.NewBufferString(body)
-	if _, err = buf.WriteTo(wc); err != nil {
-		log.Fatal(err)
-	}
-}
-
 func sendmail() {
-	auth := smtp.PlainAuth("", smtp_user, smtp_pwd, smtp_host)
-	msg := []byte(
-	"To: " + to + "\r\n" +
-	"Subject: " + subject + "\r\n" +
-	"\r\n" +
-	body + "\r\n")
-	err := smtp.SendMail(smtp_host + ":" + smtp_port, auth, from, []string{to}, msg)
+	auth := smtp.PlainAuth("", smtpUser, smtpPwd, smtpHost)
+
+	boundary := "-----PART1"
+	mailHeader := fmt.Sprintf(
+		"From: %s\r\n"+
+		"To: %s\r\n"+
+		"Subject: %s\r\nMIME-Version: 1.0\r\n"+
+		"Content-Type: multipart/mixed; boundary=%s\r\n--%s",
+		from, to, subject, boundary, boundary)
+
+	mailBody := fmt.Sprintf(
+		"\r\n"+
+		"Content-Type: %s\r\n"+
+		"Content-Transfer-Encoding:8bit\r\n"+
+		"\r\n%s\r\n--%s", contentType, body, boundary)
+
+	var mailAttach string
+	if len(attachFile) > 0 {
+		content, _ := ioutil.ReadFile(attachFile)
+		encoded := base64.StdEncoding.EncodeToString(content)
+		fileName := path.Base(attachFile)
+
+		lineMaxLength := 500
+		nbrLines := len(encoded) / lineMaxLength
+
+		var buf bytes.Buffer
+		for i := 0; i < nbrLines; i++ {
+			buf.WriteString(encoded[i*lineMaxLength:(i+1)*lineMaxLength] + "\n")
+		}
+
+		buf.WriteString(encoded[nbrLines*lineMaxLength:])
+
+		attachBytes, err := ioutil.ReadFile(attachFile)
+		if err != nil{
+			log.Fatal(err)
+		}
+		mimeType := http.DetectContentType(attachBytes)
+		mailAttach = fmt.Sprintf(
+			"\r\n"+
+			"Content-Type: %s; name=\"%s\"\r\n"+
+			"Content-Transfer-Encoding:base64\r\n"+
+			"Content-Disposition: attachment; filename=\"%s\"\r\n\r\n%s\r\n--%s--",
+			mimeType, attachFile, fileName, buf.String(), boundary)
+	}
+
+	err := smtp.SendMail(smtpHost + ":" + smtpPort,
+		auth,
+		from,
+		[]string{to},
+		[]byte(
+			mailHeader+
+			mailBody+
+			mailAttach))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -75,7 +109,7 @@ func sendmail() {
 func usage() {
 	out := `
 usage:
-	go run src/sendmail.go [option] (default-setting: config/default.toml)
+	go run src/sendmail.go [option] (default-config: config/default.toml)
 
 option:
 	-u, --user 			smtp login user
@@ -85,8 +119,10 @@ option:
 	-f, --from			email sender
 	-t, --to 			email recipient
 	-s, --subject 		email subject
+	-a, --attach        email attach file
+	-c, --content-type	email content-type
 	-b, --body 			email body
-	-m, --mode 			send mode(sendmail|stream|config)
+	--show				view show
 	--help			 	view usage
 
 example:
@@ -98,47 +134,52 @@ example:
 		-f sender@example.org \
 		-t recipient@example.net \
 		-s "What's happening?" \
-		-b "Read a book." \
-		-m sendmail
+		-a "/book-image.png" \
+		-b "Read a book."
 	`
 	fmt.Println(out)
 }
 
 func showConfig() {
 	fmt.Println(
-		"[smtp]\n"  +
-		"user: " 	+ smtp_user + "\n" +
-		"pwd: "  	+ smtp_pwd  + "\n" +
-		"host: " 	+ smtp_host + "\n" +
-		"port: " 	+ smtp_port + "\n" +
-		"[mail]\n" 	+
-		"from: " 	+ from	    + "\n" +
-		"to: " 		+ to 	    + "\n" +
-		"subject: " + subject	+ "\n" +
-		"body: " 	+ body 	+ "\n")
+		"[smtp]\n"  		+
+		"user: " 			+ smtpUser 		+ "\n" +
+		"pwd: "  			+ smtpPwd  		+ "\n" +
+		"host: " 			+ smtpHost 		+ "\n" +
+		"port: " 			+ smtpPort 		+ "\n" +
+		"[mail]\n" 			+
+		"from: " 			+ from	     	+ "\n" +
+		"to: " 				+ to 	     	+ "\n" +
+		"subject: " 		+ subject	 	+ "\n" +
+		"attache: "			+ attachFile 	+ "\n" +
+		"content-type: "	+ contentType	+ "\n" +
+		"body: " 			+ body 			+ "\n")
 }
 
 func setFlag() {
 	f := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
-	f.StringVar(&smtp_user,	"u", 		config.Smtp.User, "smtp login user")
-	f.StringVar(&smtp_user,	"user", 	config.Smtp.User, "smtp login user")
-	f.StringVar(&smtp_pwd ,	"p", 		config.Smtp.Pwd,  "smtp login password")
-	f.StringVar(&smtp_pwd ,	"password", config.Smtp.Pwd,  "smtp login password")
-	f.StringVar(&smtp_host,	"h", 		config.Smtp.Host, "smtp server host")
-	f.StringVar(&smtp_host,	"host", 	config.Smtp.Host, "smtp server host")
-	f.StringVar(&smtp_port,	"P", 		config.Smtp.Port, "stmp server port")
-	f.StringVar(&smtp_port,	"Port", 	config.Smtp.Port, "stmp server port")
-	f.StringVar(&from     ,	"f", 		config.From,      "email sender")
-	f.StringVar(&from     ,	"from", 	config.From,      "email sender")
-	f.StringVar(&to       ,	"t", 		config.To,        "email recipient")
-	f.StringVar(&to       ,	"to", 		config.To,        "email recipient")
-	f.StringVar(&subject  ,	"s", 		config.Subject,   "email subject")
-	f.StringVar(&subject  ,	"subject", 	config.Subject,   "email subject")
-	f.StringVar(&body     ,	"b", 		config.Body,      "email body")
-	f.StringVar(&body     ,	"body", 	config.Body,      "email body")
-	f.StringVar(&mode     ,	"m", 		config.Mode,      "send mode(sendmail|stream|config)")
-	f.StringVar(&mode     ,	"mode", 	config.Mode,      "send mode(sendmail|stream|config)")
-	f.BoolVar  (&help     ,	"help",		false, 		   	  "View usage")
+	f.StringVar(&smtpUser,				"u", 			config.Smtp.User, 	"smtp login user")
+	f.StringVar(&smtpUser,				"user", 		config.Smtp.User, 	"smtp login user")
+	f.StringVar(&smtpPwd, 				"p", 			config.Smtp.Pwd,  	"smtp login password")
+	f.StringVar(&smtpPwd, 				"password", 	config.Smtp.Pwd,  	"smtp login password")
+	f.StringVar(&smtpHost,				"h", 			config.Smtp.Host, 	"smtp server host")
+	f.StringVar(&smtpHost,				"host", 		config.Smtp.Host, 	"smtp server host")
+	f.StringVar(&smtpPort,				"P", 			config.Smtp.Port, 	"stmp server port")
+	f.StringVar(&smtpPort,				"Port", 		config.Smtp.Port, 	"stmp server port")
+	f.StringVar(&from,     				"f", 			config.From,      	"email sender")
+	f.StringVar(&from,     				"from", 		config.From,      	"email sender")
+	f.StringVar(&to,       				"t", 			config.To,        	"email recipient")
+	f.StringVar(&to,       				"to", 			config.To,        	"email recipient")
+	f.StringVar(&subject,  				"s", 			config.Subject,   	"email subject")
+	f.StringVar(&subject,  				"subject", 		config.Subject,   	"email subject")
+	f.StringVar(&attachFile,			"a", 			config.AttachFile,	"email attach file")
+	f.StringVar(&attachFile,	    	"attach",  		config.AttachFile,	"email attach file")
+	f.StringVar(&contentType,			"c", 			config.ContentType,	"email body content-type")
+	f.StringVar(&contentType,	    	"content-type", config.ContentType,	"email body content-type")
+	f.StringVar(&body,     				"b", 			config.Body,      	"email body")
+	f.StringVar(&body,     				"body", 		config.Body,      	"email body")
+	f.BoolVar  (&show,	 				"show",			false, 		   	  	"View config")
+	f.BoolVar  (&help,     				"help",			false, 		   	  	"View usage")
 	f.Parse(os.Args[1:])
 	for 0 < f.NArg() {
 		f.Parse(f.Args()[1:])
@@ -148,23 +189,19 @@ func setFlag() {
 func main() {
 	if _, err := toml.DecodeFile("config/default.toml", &config); err != nil {
 		log.Fatal(err)
-		return
+		os.Exit(1)
 	}
 	setFlag()
 
 	if help {
 		usage()
-		return
+		os.Exit(0)
 	}
 
-	switch (mode){
-	case "strem":
-		stream()
-	case "sendmail":
-		sendmail()
-	case "config":
+	if show {
 		showConfig()
-	default:
-		usage()
+		os.Exit(0)
 	}
+
+	sendmail()
 }
