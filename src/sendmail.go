@@ -12,6 +12,7 @@ import (
 	"encoding/base64"
 	"path"
 	"net/http"
+	"strings"
 )
 
 type Smtp struct {
@@ -50,7 +51,7 @@ var (
 func sendmail() {
 	auth := smtp.PlainAuth("", smtpUser, smtpPwd, smtpHost)
 
-	boundary := "-----PART1"
+	boundary := "PART"
 	mailHeader := fmt.Sprintf(
 		"From: %s\r\n"+
 		"To: %s\r\n"+
@@ -65,32 +66,38 @@ func sendmail() {
 		"\r\n%s\r\n--%s", contentType, body, boundary)
 
 	var mailAttach string
-	if len(attachFile) > 0 {
-		content, _ := ioutil.ReadFile(attachFile)
-		encoded := base64.StdEncoding.EncodeToString(content)
-		fileName := path.Base(attachFile)
+	attachs := strings.Split(attachFile, ",")
+	if len(attachs) > 0 {
+		for i, a := range attachs {
+			content, _ := ioutil.ReadFile(a)
+			encoded := base64.StdEncoding.EncodeToString(content)
+			fileName := path.Base(a)
 
-		lineMaxLength := 500
-		nbrLines := len(encoded) / lineMaxLength
+			lineMaxLength := 500
+			nbrLines := len(encoded) / lineMaxLength
 
-		var buf bytes.Buffer
-		for i := 0; i < nbrLines; i++ {
-			buf.WriteString(encoded[i*lineMaxLength:(i+1)*lineMaxLength] + "\n")
+			var buf bytes.Buffer
+			for j := 0; j < nbrLines; j++ {
+				buf.WriteString(encoded[j * lineMaxLength:(j + 1) * lineMaxLength] + "\n")
+			}
+
+			buf.WriteString(encoded[nbrLines * lineMaxLength:])
+
+			attachBytes, err := ioutil.ReadFile(a)
+			if err != nil {
+				log.Fatal(err)
+			}
+			mimeType := http.DetectContentType(attachBytes)
+			if i == len(attachs) - 1 {
+				boundary += "--"
+			}
+			mailAttach += fmt.Sprintf(
+				"\r\n" +
+				"Content-Type: %s; name=\"%s\"\r\n" +
+				"Content-Transfer-Encoding:base64\r\n" +
+				"Content-Disposition: attachment; filename=\"%s\"\r\n\r\n%s\r\n--%s",
+				mimeType, a, fileName, buf.String(), boundary)
 		}
-
-		buf.WriteString(encoded[nbrLines*lineMaxLength:])
-
-		attachBytes, err := ioutil.ReadFile(attachFile)
-		if err != nil{
-			log.Fatal(err)
-		}
-		mimeType := http.DetectContentType(attachBytes)
-		mailAttach = fmt.Sprintf(
-			"\r\n"+
-			"Content-Type: %s; name=\"%s\"\r\n"+
-			"Content-Transfer-Encoding:base64\r\n"+
-			"Content-Disposition: attachment; filename=\"%s\"\r\n\r\n%s\r\n--%s--",
-			mimeType, attachFile, fileName, buf.String(), boundary)
 	}
 
 	err := smtp.SendMail(smtpHost + ":" + smtpPort,
@@ -122,7 +129,7 @@ option:
 	-a, --attach        email attach file
 	-c, --content-type	email content-type
 	-b, --body 			email body
-	--show				view show
+	--show				view config
 	--help			 	view usage
 
 example:
