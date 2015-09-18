@@ -48,6 +48,23 @@ var (
 	help 	  		bool
 )
 
+func parseBody(body string) string {
+	if len(strings.Split(body,"\n")) == 1 &&
+		Exsits(body) {
+		text, err := ioutil.ReadFile(body)
+		if err != nil {
+			panic(err)
+		}
+		body = string(text)
+	}
+	return body
+}
+
+func Exsits(path string) bool {
+	_, err := os.Stat(path)
+	return !os.IsNotExist(err)
+}
+
 func sendmail() {
 	auth := smtp.PlainAuth("", smtpUser, smtpPwd, smtpHost)
 
@@ -58,6 +75,8 @@ func sendmail() {
 		"Subject: %s\r\nMIME-Version: 1.0\r\n"+
 		"Content-Type: multipart/mixed; boundary=%s\r\n--%s",
 		from, to, subject, boundary, boundary)
+
+	body := parseBody(body)
 
 	mailBody := fmt.Sprintf(
 		"\r\n"+
@@ -128,7 +147,7 @@ option:
 	-s, --subject 		email subject
 	-a, --attach        email attach file
 	-c, --content-type	email content-type
-	-b, --body 			email body
+	-b, --body 			email body (message body or require file path)
 	--show				view config
 	--help			 	view usage
 
@@ -140,9 +159,9 @@ example:
 		-P 587 \
 		-f sender@example.org \
 		-t recipient@example.net \
-		-s "What's happening?" \
-		-a "/book-image.png" \
-		-b "Read a book."
+		-s "Hello" \
+		-a "/image.png" \
+		-b "message body or require file path"
 	`
 	fmt.Println(out)
 }
@@ -183,8 +202,8 @@ func setFlag() {
 	f.StringVar(&attachFile,	    	"attach",  		config.AttachFile,	"email attach file")
 	f.StringVar(&contentType,			"c", 			config.ContentType,	"email body content-type")
 	f.StringVar(&contentType,	    	"content-type", config.ContentType,	"email body content-type")
-	f.StringVar(&body,     				"b", 			config.Body,      	"email body")
-	f.StringVar(&body,     				"body", 		config.Body,      	"email body")
+	f.StringVar(&body,     				"b", 			config.Body,      	"email body text or require file path")
+	f.StringVar(&body,     				"body", 		config.Body,      	"email body text or require file path")
 	f.BoolVar  (&show,	 				"show",			false, 		   	  	"View config")
 	f.BoolVar  (&help,     				"help",			false, 		   	  	"View usage")
 	f.Parse(os.Args[1:])
