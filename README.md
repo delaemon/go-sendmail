@@ -1,8 +1,8 @@
 # go-sendmail [![Build Status](https://travis-ci.org/delaemon/go-sendmail.svg?branch=master)](https://travis-ci.org/delaemon/go-sendmail)
 
 ##Description
-Simple sendmail command.
-Settings can be specified from the write to a config/default.toml or command line.
+Simple sendmail command.  
+Settings can be specified from the write to a config/default.toml or command line.  
 
 ###Usage
 ```
@@ -56,5 +56,5 @@ option:
     -b "Hello"
 ```
 ####note
-"./bin/${OS_ARC}/sendmail" possible is replaced with "go run sendamail.go"
-And if to describe any of the config to a default.toml set on the command line is not required.
+"./bin/${OS_ARC}/sendmail" possible is replaced with "go run sendamail.go"  
+And if to describe any of the config to a default.toml set on the command line is not required.  
