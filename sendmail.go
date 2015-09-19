@@ -46,6 +46,8 @@ var (
 	contentType string
 	show        bool
 	help        bool
+	auth		smtp.Auth
+	boundary	string
 )
 
 func parse(body string) string {
@@ -64,11 +66,6 @@ func exists(path string) bool {
 	_, err := os.Stat(path)
 	return !os.IsNotExist(err)
 }
-
-var (
-	auth = smtp.PlainAuth("", smtpUser, smtpPwd, smtpHost)
-	boundary = "PART"
-)
 
 func getHeader() string {
 	mailHeader := fmt.Sprintf(
@@ -128,7 +125,7 @@ func getAttach() string{
 	return mailAttach
 }
 
-func doSendMail(header, body, attach string) bool {
+func doSendMail(header, body, attach string) {
 	err := smtp.SendMail(smtpHost+":"+smtpPort,
 		auth,
 		from,
@@ -138,10 +135,8 @@ func doSendMail(header, body, attach string) bool {
 			body+
 			attach))
 	if err != nil {
-		log.Println(err)
-		return false
+		log.Fatal(err)
 	}
-	return true
 }
 
 func usage() {
@@ -233,6 +228,9 @@ func setDefaultConfig(path string) {
 func main() {
 	setDefaultConfig("config/default.toml")
 	setFlag()
+
+	auth = smtp.PlainAuth("", smtpUser, smtpPwd, smtpHost)
+	boundary = "PART"
 
 	if help {
 		usage()
