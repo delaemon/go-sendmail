@@ -153,14 +153,13 @@ option:
 	-u, --user 			smtp login user
 	-p, --password 		smtp login password
 	-h, --host			smtp server host
-	-P, --Port 			stmp server port
+	-P, --port 			stmp server port
 	-f, --from			email sender
 	-t, --to 			email recipient
 	-s, --subject 		email subject
 	-a, --attach        email attach file
-	-c, --content-type	email content-type
+	-c, --content-type	email body content-type
 	-b, --body 			email body (message body or require file path)
-	-d, --dry			execute dry run (does not actually send)
 	--show				view config
 	--help			 	view usage
 
@@ -204,7 +203,7 @@ func setFlag() {
 	f.StringVar(&smtpHost, "h", config.Smtp.Host, "smtp server host")
 	f.StringVar(&smtpHost, "host", config.Smtp.Host, "smtp server host")
 	f.StringVar(&smtpPort, "P", config.Smtp.Port, "stmp server port")
-	f.StringVar(&smtpPort, "Port", config.Smtp.Port, "stmp server port")
+	f.StringVar(&smtpPort, "port", config.Smtp.Port, "stmp server port")
 	f.StringVar(&from, "f", config.From, "email sender")
 	f.StringVar(&from, "from", config.From, "email sender")
 	f.StringVar(&to, "t", config.To, "email recipient")
