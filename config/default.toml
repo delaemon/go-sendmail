@@ -1,8 +1,7 @@
 from = "sender@example.org"
 to = "recipient@example.net"
-mode = "sendmail"
 subject = "Let It Be"
-attachFile = "/path/to/image.png"
+attachFile = "./test/attach.png"
 contentType = "text/html"
 body = '''<h1>When I find myself in times of trouble
 Mother Mary comes to me
