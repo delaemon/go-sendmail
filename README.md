@@ -1,4 +1,4 @@
-# go-sendmail [![Build Status](https://travis-ci.org/delaemon/go-sendmail.svg?branch=master)](https://travis-ci.org/delaemon/go-sendmail) [![GoCover](http://gocover.io/_badge/github.com/delaemon/go-sendmail)](http://gocover.io/github.com/delaemon/go-sendmail)
+# go-sendmail [![Build Status](https://travis-ci.org/delaemon/go-sendmail.svg?branch=master)](https://travis-ci.org/delaemon/go-sendmail)
 
 ##Description
 Simple sendmail command.
